@@ -115,10 +115,19 @@ fn main() {
     match args.command {
         Commands::Ls => {
             let projects = read_projects(&projects_file_path);
+            if projects.len() == 0 {
+                println!("You don't have any projects. Learn how with:\n$ taita help add");
+            }
             for project in projects.iter() {
+                let name = &project.name;
+                let folder = &project.folder;
+                let repository = &project.repo;
+                let tags = project.tags.join(", ");
                 println!(
-                    "{}\nFolder: {}\nURL: {}\n",
-                    project.name, project.folder, project.repo
+                    "{name}
+Folder: {folder}
+Repository: {repository}
+Tags: {tags}",
                 );
             }
         }

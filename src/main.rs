@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::{self, OpenOptions},
     io::{self, Write},
     path::Path,
-    process::ExitStatus,
 };
 
 use clap::{Parser, Subcommand};
@@ -46,6 +45,24 @@ enum Commands {
 
         #[arg(short, long)]
         tags: Vec<String>,
+    },
+    Edit {
+        old_name: String,
+
+        #[arg(short, long)]
+        name: Option<String>,
+
+        #[arg(short, long)]
+        folder: Option<String>,
+
+        #[arg(short, long)]
+        repo: Option<String>,
+
+        #[arg(short, long)]
+        tags: Vec<String>,
+
+        #[arg(short, long)]
+        untags: Vec<String>,
     },
     Rm {
         name: String,
@@ -194,6 +211,33 @@ Tags: {tags}",
                     .position(|p| p.name == name)
                     .expect("Failed to find project of that name"),
             );
+            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
+        }
+        Commands::Edit {
+            old_name,
+            name,
+            folder,
+            repo,
+            tags,
+            untags,
+        } => {
+            let mut projects = read_projects(&projects_file_path);
+            let index = projects
+                .iter()
+                .position(|p| p.name == old_name)
+                .expect("Failed to find project of that name");
+
+            projects[index].name = name.unwrap_or(projects[index].name.clone());
+            projects[index].folder = folder.unwrap_or(projects[index].folder.clone());
+            projects[index].repo = repo.unwrap_or(projects[index].repo.clone());
+            projects[index].tags = projects[index]
+                .tags
+                .iter()
+                .chain(tags.iter())
+                .filter(|t| !untags.contains(t))
+                .map(|t| t.to_string())
+                .collect();
+
             save_projects(&projects, &projects_file_path).expect("Failed to save projects");
         }
     };

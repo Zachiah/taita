@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
 use std::{
     fs::{self, File, OpenOptions},
-    io::Write,
+    io::{Write, self},
     path::Path,
     process::ExitStatus,
 };
@@ -14,6 +13,7 @@ struct Project {
     repo: String,
     name: String,
     folder: String,
+    tags: Vec<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -44,6 +44,9 @@ enum Commands {
         #[arg(short, long)]
         folder: Option<String>,
     },
+    Rm {
+        name: String,
+    },
 }
 
 #[derive(Deserialize, Serialize)]
@@ -70,6 +73,24 @@ fn repo_to_url(repo: &str) -> String {
     } else {
         format!("git@github.com:{}", repo)
     }
+}
+
+fn save_projects(projects: &Vec<Project>, projects_file_path: &Path) -> Result<(), io::Error> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(projects_file_path)?;
+
+    file.write_all(
+        &serde_json::to_string_pretty(&projects)
+            .unwrap()
+            .chars()
+            .map(|c| c as u8)
+            .collect::<Vec<u8>>(),
+    )?;
+
+    Ok(())
 }
 
 fn main() {
@@ -144,22 +165,19 @@ fn main() {
                 repo: repo.clone(),
                 folder: folder.unwrap_or(repo.split('/').last().unwrap().to_string()),
                 name: name.unwrap_or(repo.split('/').last().unwrap().to_string()),
+                tags: vec![],
             });
-
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(projects_file_path)
-                .unwrap();
-
-            file.write_all(
-                &serde_json::to_string_pretty(&projects)
-                    .unwrap()
-                    .chars()
-                    .map(|c| c as u8)
-                    .collect::<Vec<u8>>(),
-            )
-            .unwrap();
+            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
+        }
+        Commands::Rm { name } => {
+            let mut projects = read_projects(&projects_file_path);
+            projects.remove(
+                projects
+                    .iter()
+                    .position(|p| p.name == name)
+                    .expect("Failed to find project of that name"),
+            );
+            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
         }
     };
 }

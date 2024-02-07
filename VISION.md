@@ -1,6 +1,6 @@
 ## VISION for Taita project manager
 - [ ] Allows notes per project/branch/commit stored in your notes repo.
-- [ ] Maybe allow notes in local repos on like `.tita` folder if repos want to track the notes.
+- [ ] Maybe allow notes in local repos on like `.taita` folder if repos want to track the notes.
 - [ ] if so should seemlessly merge the 2 as like a checkbox so to speak.
 - [ ] should have project pickers for wofi
 - [ ] should have project pickers for nvim-telescope

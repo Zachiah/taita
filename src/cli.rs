@@ -1,4 +1,5 @@
-use crate::projects_file::{read_projects, save_projects, Project};
+use crate::projects_file::{read_projects, save_projects, Project, get_project_position};
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::Path;
 
@@ -70,7 +71,7 @@ fn repo_to_url(repo: &str) -> String {
     }
 }
 
-pub fn cli() {
+pub fn cli() -> Result<()> {
     let args = Args::parse();
 
     let taita_dir = match args.directory {
@@ -79,7 +80,7 @@ pub fn cli() {
 
             if !Path::new(default_taita_dir).exists() {
                 std::fs::create_dir(default_taita_dir)
-                    .expect("Failed to create taita default directory")
+                    .context("Failed to create taita default directory")?;
             }
 
             default_taita_dir.into()
@@ -91,7 +92,7 @@ pub fn cli() {
 
     match args.command {
         Commands::Ls { picker } => {
-            let projects = read_projects(&projects_file_path).expect("Failed to read project file");
+            let projects = read_projects(&projects_file_path)?;
             if projects.len() == 0 {
                 println!("You don't have any projects. Learn how with:\n$ taita help add");
             }
@@ -122,7 +123,7 @@ Tags: {tags}",
             let name = if picker {
                 name.split(" - ")
                     .next()
-                    .expect("Invalid name from picker")
+                    .context("Invalid name from picker")?
                     .to_string()
             } else {
                 name
@@ -170,24 +171,24 @@ Tags: {tags}",
             folder,
             tags,
         } => {
-            let mut projects = read_projects(&projects_file_path).expect("Failed to read project file");
+            let mut projects =
+                read_projects(&projects_file_path)?;
+
+            // Unwrap used below due to the data being validated already from read_projects
             projects.push(Project {
                 repo: repo.clone(),
                 folder: folder.unwrap_or(repo.split('/').last().unwrap().to_string()),
                 name: name.unwrap_or(repo.split('/').last().unwrap().to_string()),
                 tags,
             });
-            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
+            save_projects(&projects, &projects_file_path)?;
         }
         Commands::Rm { name } => {
-            let mut projects = read_projects(&projects_file_path).expect("Failed to read project file");
+            let mut projects = read_projects(&projects_file_path)?;
             projects.remove(
-                projects
-                    .iter()
-                    .position(|p| p.name == name)
-                    .expect("Failed to find project of that name"),
+                get_project_position(&projects, name)?
             );
-            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
+            save_projects(&projects, &projects_file_path)?;
         }
         Commands::Edit {
             old_name,
@@ -197,11 +198,8 @@ Tags: {tags}",
             tags,
             untags,
         } => {
-            let mut projects = read_projects(&projects_file_path).expect("Failed to read project file");
-            let index = projects
-                .iter()
-                .position(|p| p.name == old_name)
-                .expect("Failed to find project of that name");
+            let mut projects = read_projects(&projects_file_path)?;
+            let index = get_project_position(&projects, old_name)?;
 
             projects[index].name = name.unwrap_or(projects[index].name.clone());
             projects[index].folder = folder.unwrap_or(projects[index].folder.clone());
@@ -214,7 +212,9 @@ Tags: {tags}",
                 .map(|t| t.to_string())
                 .collect();
 
-            save_projects(&projects, &projects_file_path).expect("Failed to save projects");
+            save_projects(&projects, &projects_file_path)?;
         }
     };
+
+    Ok(())
 }

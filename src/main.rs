@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{Write, self},
+    io::{self, Write},
     path::Path,
     process::ExitStatus,
 };
@@ -43,6 +43,9 @@ enum Commands {
 
         #[arg(short, long)]
         folder: Option<String>,
+
+        #[arg(short, long)]
+        tags: Vec<String>,
     },
     Rm {
         name: String,
@@ -168,13 +171,18 @@ Tags: {tags}",
                 .spawn()
                 .unwrap();
         }
-        Commands::Add { name, repo, folder } => {
+        Commands::Add {
+            name,
+            repo,
+            folder,
+            tags,
+        } => {
             let mut projects = read_projects(&projects_file_path);
             projects.push(Project {
                 repo: repo.clone(),
                 folder: folder.unwrap_or(repo.split('/').last().unwrap().to_string()),
                 name: name.unwrap_or(repo.split('/').last().unwrap().to_string()),
-                tags: vec![],
+                tags,
             });
             save_projects(&projects, &projects_file_path).expect("Failed to save projects");
         }

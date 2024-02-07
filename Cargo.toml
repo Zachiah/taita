@@ -1,5 +1,7 @@
 [package]
 name = "taita"
+description = "A project manager (pre-alpha)"
+license = "MIT"
 version = "0.1.0"
 edition = "2021"
 

@@ -30,9 +30,15 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Ls,
+    Ls {
+        #[arg(short, long, default_value_t = false)]
+        picker: bool,
+    },
     Open {
         name: String,
+
+        #[arg(short, long, default_value_t = false)]
+        picker: bool,
     },
     Add {
         repo: String,
@@ -133,7 +139,7 @@ fn main() {
     let projects_file_path = Path::new(&taita_dir).join("projects.json");
 
     match args.command {
-        Commands::Ls => {
+        Commands::Ls { picker } => {
             let projects = read_projects(&projects_file_path);
             if projects.len() == 0 {
                 println!("You don't have any projects. Learn how with:\n$ taita help add");
@@ -143,15 +149,27 @@ fn main() {
                 let folder = &project.folder;
                 let repository = &project.repo;
                 let tags = project.tags.join(", ");
-                println!(
-                    "{name}
+                let tags_picker = project
+                    .tags
+                    .iter()
+                    .map(|t| "#".to_string() + t)
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                if picker {
+                    println!("{name} - {tags_picker}");
+                } else {
+                    println!(
+                        "{name}
 Folder: {folder}
 Repository: {repository}
 Tags: {tags}",
-                );
+                    );
+                }
             }
         }
-        Commands::Open { name } => {
+        Commands::Open { name, picker } => {
+            let name = if picker { name.split(" - ").next().expect("Invalid name from picker").to_string() } else { name };
+
             let projects = read_projects(&projects_file_path);
 
             let project = projects

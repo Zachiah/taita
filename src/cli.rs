@@ -114,7 +114,8 @@ pub fn cli() -> Result<()> {
                         "{name}
 Folder: {folder}
 Repository: {repository}
-Tags: {tags}",
+Tags: {tags}
+",
                     );
                 }
             }

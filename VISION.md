@@ -14,6 +14,9 @@
 - [ ] finders should fuzzyfind over all relevant data
 - [ ] should be able to save vim session files per commit/branch/project for later use
 - [ ] maybe dedicated support for links and like opening them all at once
+- [ ] It should be installable through
+    - [x] cargo (`cargo install taita`)
+    - [ ] nixpkgs (`pkgs.taita` in your config)
 
 ## Issues with currently implemented features
 - [ ] Errors from alacritty will go into previous terminal

@@ -1,4 +1,6 @@
-use crate::projects_file::{read_projects, save_projects, Project, get_project_position};
+use crate::projects_file::{
+    get_project_notes_file_path, get_project_position, read_projects, save_projects, Project,
+};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::Path;
@@ -61,6 +63,9 @@ enum Commands {
     Rm {
         name: String,
     },
+    Notes {
+        name: String,
+    },
 }
 
 fn repo_to_url(repo: &str) -> String {
@@ -89,10 +94,10 @@ pub fn cli() -> Result<()> {
     };
     let projects_dir = args.projects.unwrap_or("/home/zachiahsawyer/Git".into());
     let projects_file_path = Path::new(&taita_dir).join("projects.json");
+    let mut projects = read_projects(&projects_file_path)?;
 
     match args.command {
         Commands::Ls { picker } => {
-            let projects = read_projects(&projects_file_path)?;
             if projects.len() == 0 {
                 println!("You don't have any projects. Learn how with:\n$ taita help add");
             }
@@ -162,9 +167,12 @@ Tags: {tags}
                     project_path.to_str().unwrap(),
                     "--command",
                     "tmux",
+                    "-c",
+                    format!("nvim {}", get_project_notes_file_path(Path::new(&taita_dir), project)?).as_str(),
                 ])
                 .spawn()
-                .unwrap();
+                .context("Failed to open project")?;
+
         }
         Commands::Add {
             name,
@@ -172,9 +180,6 @@ Tags: {tags}
             folder,
             tags,
         } => {
-            let mut projects =
-                read_projects(&projects_file_path)?;
-
             // Unwrap used below due to the data being validated already from read_projects
             projects.push(Project {
                 repo: repo.clone(),
@@ -185,10 +190,7 @@ Tags: {tags}
             save_projects(&projects, &projects_file_path)?;
         }
         Commands::Rm { name } => {
-            let mut projects = read_projects(&projects_file_path)?;
-            projects.remove(
-                get_project_position(&projects, name)?
-            );
+            projects.remove(get_project_position(&projects, name)?);
             save_projects(&projects, &projects_file_path)?;
         }
         Commands::Edit {
@@ -199,7 +201,6 @@ Tags: {tags}
             tags,
             untags,
         } => {
-            let mut projects = read_projects(&projects_file_path)?;
             let index = get_project_position(&projects, old_name)?;
 
             projects[index].name = name.unwrap_or(projects[index].name.clone());
@@ -214,6 +215,14 @@ Tags: {tags}
                 .collect();
 
             save_projects(&projects, &projects_file_path)?;
+        }
+        Commands::Notes { name } => {
+            let index = get_project_position(&projects, name)?;
+            let project = &projects[index];
+            println!(
+                "{}",
+                get_project_notes_file_path(Path::new(&taita_dir), &project)?
+            );
         }
     };
 

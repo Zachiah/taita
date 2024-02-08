@@ -55,3 +55,28 @@ pub fn save_projects(projects: &Vec<Project>, projects_file_path: &Path) -> Resu
 
     Ok(())
 }
+
+pub fn get_project_notes_file_path(taita_dir: &Path, project: &Project) -> Result<String> {
+    let project_data_path = Path::new(&taita_dir).join(Path::new(&project.folder));
+    if !project_data_path.exists() {
+        std::fs::create_dir(project_data_path.clone())?;
+    }
+
+    let notes_path = project_data_path.join("notes.md");
+
+    if !notes_path.exists() {
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(notes_path)
+            .context("Failed to create notes file")?
+            .write(format!("# `{}` - Notes\n\n## TODO:\n- [ ] A task", project.name).as_bytes())
+            .context("Failed to write to notes file")?;
+    }
+
+    Ok(project_data_path
+        .join("notes.md")
+        .to_str()
+        .context("Invalide unicode in the filepath")?
+        .to_string())
+}

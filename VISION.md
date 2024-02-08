@@ -15,27 +15,30 @@
 - [ ] should be able to save vim session files per commit/branch/project for later use
 - [ ] maybe dedicated support for links and like opening them all at once
 
-## Rough sketch of opening a project flow in my mind's eye right now
-```
-# Get a terminal
-if "in terminal" and not options['-n']:
-    if "in tmux session":
-        "detach tmux session"
+## Issues with currently implemented features
+- [ ] Errors from alacritty will go into previous terminal
+- [ ] Opening logic doesn't reuse tmux sessions and always opens a new terminal (see below)
 
-    terminal = "this one"
-if "in wofi" or options['-n']:
-    terminal = "open alacritty"
+## Rough sketch of the flow for opening a project in my mind's eye right now
 
-# Join the session
-session_id = "the unique identifier for the project/branch... we generate"
-if tmux_session_exists(session_id):
-    attatch_to_session(session_id)
-else:
-    create_tmux_session_with_id(session_id)
-    set_home_dir() # from project details
-    set_branch() # from project details
+### Get a terminal
+- `if` in terminal `and` `not` `options['-n']`:
+    - `if` in tmux session:
+        - detach tmux session
+    - `terminal` `=` the one we are in
+- `if` in wofi `or` `options['-n']`:
+    - `terminal` `=` open alacritty
 
-# Links part (maybe implement)
-open_firefox()
-open_all_links() # from project details
-```
+### Join the session
+- `session_id` `=` the unique identifier for the project/branch... we generate
+- `if` tmux session exists for `session_id`:
+    - attatch to session `session_id`
+- `else`:
+    - create tmux session with id `session_id`
+    - set home dir from project details
+    - set branch from project details
+    - open nvim the notes file from the project dir
+
+### Links part (maybe implement)
+- open firefox
+- open all links from project details

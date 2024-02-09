@@ -161,18 +161,21 @@ Tags: {tags}
                 }
             }
 
-            std::process::Command::new("alacritty")
+            let script = format!(
+                r#"
+                alacritty --working-directory {} --command tmux new-session "nvim {}"
+            "#,
+                project_path.to_str().unwrap(),
+                get_project_notes_file_path(Path::new(&taita_dir), project)?,
+            );
+
+            std::process::Command::new("sh")
                 .args(vec![
-                    "--working-directory",
-                    project_path.to_str().unwrap(),
-                    "--command",
-                    "tmux",
                     "-c",
-                    format!("nvim {}", get_project_notes_file_path(Path::new(&taita_dir), project)?).as_str(),
+                    script.as_str(),
                 ])
                 .spawn()
                 .context("Failed to open project")?;
-
         }
         Commands::Add {
             name,

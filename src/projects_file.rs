@@ -80,3 +80,23 @@ pub fn get_project_notes_file_path(taita_dir: &Path, project: &Project) -> Resul
         .context("Invalide unicode in the filepath")?
         .to_string())
 }
+
+pub fn get_default_projects_dir() -> Result<String> {
+    Ok(
+        Path::new(&std::env::var("HOME").context("Home dir not set")?)
+            .join("Git")
+            .to_str()
+            .context("Failed to conver home dir to string")?
+            .to_string(),
+    )
+}
+
+pub fn get_default_taita_dir() -> Result<String> {
+    Ok(
+        Path::new(&std::env::var("HOME").context("Home dir not set")?)
+            .join(".taita")
+            .to_str()
+            .context("Failed to conver home dir to string")?
+            .to_string(),
+    )
+}

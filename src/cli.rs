@@ -1,7 +1,7 @@
 use crate::projects_file::{
-    get_project_notes_file_path, get_project_position, read_projects, save_projects, Project,
+    get_project_notes_file_path, get_project_position, read_projects, save_projects, Project, get_default_projects_dir, get_default_taita_dir,
 };
-use anyhow::{Context, Result, Error, anyhow};
+use anyhow::{Context, Result, anyhow};
 use clap::{Parser, Subcommand};
 use std::{os::unix::process::CommandExt, path::Path};
 
@@ -84,10 +84,10 @@ pub fn cli() -> Result<()> {
 
     let taita_dir = match args.directory {
         None => {
-            let default_taita_dir = "/home/zachiahsawyer/.taita";
+            let default_taita_dir = get_default_taita_dir()?;
 
-            if !Path::new(default_taita_dir).exists() {
-                std::fs::create_dir(default_taita_dir)
+            if !Path::new(&default_taita_dir).exists() {
+                std::fs::create_dir(default_taita_dir.clone())
                     .context("Failed to create taita default directory")?;
             }
 
@@ -95,7 +95,7 @@ pub fn cli() -> Result<()> {
         }
         Some(d) => d,
     };
-    let projects_dir = args.projects.unwrap_or("/home/zachiahsawyer/Git".into());
+    let projects_dir = args.projects.unwrap_or(get_default_projects_dir()?);
     let projects_file_path = Path::new(&taita_dir).join("projects.json");
     let mut projects = read_projects(&projects_file_path)?;
 

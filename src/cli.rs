@@ -207,7 +207,8 @@ Tags: {tags}
                     if [ $? != 0 ]; then
                         cd {project_path}
                         tmux new-session -d -s taita-{name} "nvim {notes_file_path}"
-                        tmux split-window -l 10 -t taita-{name}
+                        tmux split-window -l 4 -t taita-{name}
+                        tmux select-pane -t taita-{name}:0.0
                     fi
                 "#,
             );

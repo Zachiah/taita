@@ -1,7 +1,7 @@
 use crate::projects_file::{
     get_project_notes_file_path, get_project_position, read_projects, save_projects, Project,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, Error, anyhow};
 use clap::{Parser, Subcommand};
 use std::{os::unix::process::CommandExt, path::Path};
 
@@ -154,13 +154,10 @@ Tags: {tags}
                     .arg(project.folder.clone())
                     .current_dir(projects_dir)
                     .output()
-                    .unwrap();
+                    .context("Failed to clone git repo")?;
 
                 if !result.status.success() {
-                    panic!(
-                        "Failed to clone repo:\n{}",
-                        std::str::from_utf8(&result.stderr).unwrap()
-                    );
+                    return Err(anyhow!("Failed to clone git repo"));
                 }
             }
 

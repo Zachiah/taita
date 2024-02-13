@@ -3,7 +3,7 @@ use crate::projects_file::{
 };
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use std::path::Path;
+use std::{os::unix::process::CommandExt, path::Path};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -29,6 +29,9 @@ enum Commands {
 
         #[arg(short, long, default_value_t = false)]
         picker: bool,
+    },
+    OpenInPlace {
+        name: String,
     },
     Add {
         repo: String,
@@ -161,21 +164,63 @@ Tags: {tags}
                 }
             }
 
+            let current_executable =
+                std::env::current_exe().context("Failed to get current executable path")?;
+
+            let current_exe = current_executable
+                .to_str()
+                .context("Failed to convert current executable path to string")?;
+
+            if std::env::var("TERM") == Ok("alacritty".to_string()) {
+                std::process::Command::new(current_exe)
+                    .arg("open-in-place")
+                    .arg(name)
+                    .exec();
+            } else {
+                let script = format!(
+                    r#"
+                        alacritty --command bash -c "{current_exe} open-in-place {name}"
+                    "#,
+                );
+                std::process::Command::new("sh")
+                    .args(vec!["-c", script.as_str()])
+                    .spawn()
+                    .context("Failed to launch alacritty")?;
+            }
+        }
+        Commands::OpenInPlace { name } => {
+            let projects = read_projects(&projects_file_path).expect("Failed to read project file");
+
+            let project = projects
+                .iter()
+                .find(|p| p.name == name)
+                .expect("No project with that name");
+
+            let project_path = Path::new(&projects_dir).join(Path::new(&project.folder));
+            let notes_file_path = get_project_notes_file_path(Path::new(&taita_dir), project)?;
+            let project_path = project_path.to_str().unwrap();
+
             let script = format!(
                 r#"
-                alacritty --working-directory {} --command tmux new-session "nvim {}"
-            "#,
-                project_path.to_str().unwrap(),
-                get_project_notes_file_path(Path::new(&taita_dir), project)?,
-            );
+                    tmux has-session -t taita-{name} 2>/dev/null
 
+                    if [ $? != 0 ]; then
+                        cd {project_path}
+                        tmux new-session -d -s taita-{name} "nvim {notes_file_path}"
+                        tmux split-window -l 10 -t taita-{name}
+                    fi
+                "#,
+            );
             std::process::Command::new("sh")
-                .args(vec![
-                    "-c",
-                    script.as_str(),
-                ])
-                .spawn()
+                .args(vec!["-c", script.as_str()])
+                .output()
                 .context("Failed to open project")?;
+
+            std::process::Command::new("tmux")
+                .arg("a")
+                .arg("-t")
+                .arg("taita-".to_string() + &name)
+                .exec();
         }
         Commands::Add {
             name,

@@ -2,14 +2,25 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 use std::{fs::OpenOptions, io::Write};
 
 #[derive(Deserialize, Serialize)]
 pub struct Project {
     pub repo: String,
     pub name: String,
-    pub folder: String,
+    pub dir: String,
+    pub links: Vec<String>,
     pub tags: Vec<String>,
+}
+
+impl Project {
+    pub fn open_links(&self) -> Result<()> {
+        for link in self.links.iter() {
+            Command::new("xdg-open").arg(link).spawn()?;
+        }
+        Ok(())
+    }
 }
 
 pub fn read_projects(projects_file_path: &Path) -> Result<Vec<Project>> {
@@ -57,7 +68,7 @@ pub fn save_projects(projects: &Vec<Project>, projects_file_path: &Path) -> Resu
 }
 
 pub fn get_project_notes_file_path(taita_dir: &Path, project: &Project) -> Result<String> {
-    let project_data_path = Path::new(&taita_dir).join(Path::new(&project.folder));
+    let project_data_path = Path::new(&taita_dir).join(Path::new(&project.dir));
     if !project_data_path.exists() {
         std::fs::create_dir(project_data_path.clone())?;
     }

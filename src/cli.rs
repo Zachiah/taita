@@ -40,10 +40,13 @@ enum Commands {
         name: Option<String>,
 
         #[arg(short, long)]
-        folder: Option<String>,
+        dir: Option<String>,
 
         #[arg(short, long)]
         tags: Vec<String>,
+
+        #[arg(short, long)]
+         links: Vec<String>,
     },
     Edit {
         old_name: String,
@@ -52,7 +55,7 @@ enum Commands {
         name: Option<String>,
 
         #[arg(short, long)]
-        folder: Option<String>,
+        dir: Option<String>,
 
         #[arg(short, long)]
         repo: Option<String>,
@@ -64,9 +67,6 @@ enum Commands {
         untags: Vec<String>,
     },
     Rm {
-        name: String,
-    },
-    Notes {
         name: String,
     },
 }
@@ -106,7 +106,7 @@ pub fn cli() -> Result<()> {
             }
             for project in projects.iter() {
                 let name = &project.name;
-                let folder = &project.folder;
+                let dir = &project.dir;
                 let repository = &project.repo;
                 let tags = project.tags.join(", ");
                 let tags_picker = project
@@ -120,7 +120,7 @@ pub fn cli() -> Result<()> {
                 } else {
                     println!(
                         "{name}
-Folder: {folder}
+Directory: {dir}
 Repository: {repository}
 Tags: {tags}
 ",
@@ -145,13 +145,15 @@ Tags: {tags}
                 .find(|p| p.name == name)
                 .expect("No project with that name");
 
-            let project_path = Path::new(&projects_dir).join(Path::new(&project.folder));
+            project.open_links()?;
+
+            let project_path = Path::new(&projects_dir).join(Path::new(&project.dir));
             println!("{:?}", project_path);
             if !project_path.exists() {
                 let result = std::process::Command::new("git")
                     .arg("clone")
                     .arg(repo_to_url(&project.repo))
-                    .arg(project.folder.clone())
+                    .arg(project.dir.clone())
                     .current_dir(projects_dir)
                     .output()
                     .context("Failed to clone git repo")?;
@@ -193,7 +195,7 @@ Tags: {tags}
                 .find(|p| p.name == name)
                 .expect("No project with that name");
 
-            let project_path = Path::new(&projects_dir).join(Path::new(&project.folder));
+            let project_path = Path::new(&projects_dir).join(Path::new(&project.dir));
             let notes_file_path = get_project_notes_file_path(Path::new(&taita_dir), project)?;
             let project_path = project_path.to_str().unwrap();
 
@@ -223,14 +225,16 @@ Tags: {tags}
         Commands::Add {
             name,
             repo,
-            folder,
+            dir,
             tags,
+            links,
         } => {
             // Unwrap used below due to the data being validated already from read_projects
             projects.push(Project {
                 repo: repo.clone(),
-                folder: folder.unwrap_or(repo.split('/').last().unwrap().to_string()),
+                dir: dir.unwrap_or(repo.split('/').last().unwrap().to_string()),
                 name: name.unwrap_or(repo.split('/').last().unwrap().to_string()),
+                links,
                 tags,
             });
             save_projects(&projects, &projects_file_path)?;
@@ -242,7 +246,7 @@ Tags: {tags}
         Commands::Edit {
             old_name,
             name,
-            folder,
+            dir,
             repo,
             tags,
             untags,
@@ -250,7 +254,7 @@ Tags: {tags}
             let index = get_project_position(&projects, old_name)?;
 
             projects[index].name = name.unwrap_or(projects[index].name.clone());
-            projects[index].folder = folder.unwrap_or(projects[index].folder.clone());
+            projects[index].dir = dir.unwrap_or(projects[index].dir.clone());
             projects[index].repo = repo.unwrap_or(projects[index].repo.clone());
             projects[index].tags = projects[index]
                 .tags
@@ -261,14 +265,6 @@ Tags: {tags}
                 .collect();
 
             save_projects(&projects, &projects_file_path)?;
-        }
-        Commands::Notes { name } => {
-            let index = get_project_position(&projects, name)?;
-            let project = &projects[index];
-            println!(
-                "{}",
-                get_project_notes_file_path(Path::new(&taita_dir), &project)?
-            );
         }
     };
 

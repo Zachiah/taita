@@ -12,7 +12,7 @@ Run:
 ```
 $ taita add \
     --name name_of_project \
-    --folder name_of_folder_project_will_be_stored_in \
+    --dir name_of_directory \
     --tags "a, list, of, tags, that, describe, the, project"
 ```
 
